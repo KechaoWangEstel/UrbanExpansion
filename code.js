@@ -1,8 +1,5 @@
 
 
-
-
-
 var sample_img = ee.Image('users/tingtinghe2011/00FeasTemp00/sample_1020');
 var height_img = generate_result(sample_img);
 var vis = {min: 0,  max: 45,  palette: ['blue','green','yellow','orange','red']};
@@ -16,21 +13,21 @@ function generate_result(sample_img){
   var roi = sample_img.geometry();
   var all_index_img = get_composite_param_new(roi);
   var train_img_org = all_index_img.addBands(sample_img).updateMask(sample_img.selfMask());
-  var list_res = RF_Regression_by_train_img(all_index_img, train_img_org, roi, null, 'height', 30, 500);
+  var list_res = RF_Regression_by_train_img(all_index_img, train_img_org, roi, null, null, 'height', 30, 500);
   return ee.Image(list_res.get(1)).int().clip(roi);
 }
   
-function RF_Regression_by_train_img(composite, train_img_org, roi, listBandNames, classPropertyName, scal, treenum){
+function RF_Regression_by_train_img(composite, train_img_org, roi, classPoints, listBandNames, classPropertyName, scal, treenum){
   classPropertyName = classPropertyName || 'height';
   scal = scal || 30;
   treenum = treenum || 500;
-  listBandNames = listBandNames || composite.bandNames();
+  listBandNames = listBandNames || composite.bandNames();  
+  classPoints = classPoints || ee.List([4000, 3000, 2000, 1000, 800, 600, 400, 200]);
   
   
   var class_img = get_class_img(train_img_org.select(classPropertyName));
   train_img_org = train_img_org.addBands(class_img);
   var classValues = ee.List.sequence(1, 8, 1);
-  var classPoints = ee.List([4000, 3000, 2000, 1000, 800, 600, 400, 200]);
   var trainingPartition = train_img_org.stratifiedSample(1000, 'class', roi, 30, 'EPSG:4326', 1, classValues, classPoints, true, 16, true);
   
   var model = ee.Classifier.smileRandomForest(treenum, null, 5, 0.5, 5, 0)
@@ -491,9 +488,3 @@ function exportImgAsset(img, foldname, filename, roi_geo, sca, crscrs, pre){
     maxPixels: 1e13
   });
 }
-
-
-
-
-
-
